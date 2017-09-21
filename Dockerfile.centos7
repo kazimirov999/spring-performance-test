@@ -1,0 +1,33 @@
+From centos:latest
+MAINTAINER kazimirov.oleksandr@gmail.com
+COPY /target/spring-performance-test.jar spring-performance-test.jar
+RUN echo "===> update yum..." && \
+    yum update -y && \
+    echo "===> remove older versions of docker if these are installed..." && \
+    yum remove -y docker \
+                  docker-common \
+                  docker-selinux \
+                  docker-engine && \
+    echo "instal lvm..." && \
+    yum install -y yum-utils device-mapper-persistent-data lvm2 && \
+    yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo && \
+    yum-config-manager --enable docker-ce-edge && \
+    yum-config-manager --enable docker-ce-test && \
+    yum-config-manager --disable docker-ce-edge && \
+    yum -y install initscripts && yum clean all && \
+    yum makecache fast && \
+    echo "install docker..." && \
+    yum install -y docker-ce && \
+    usermod -aG docker root         && \
+RUN yum -y install systemd; yum clean all; \
+    (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do [ $i == systemd-tmpfiles-setup.service ] || rm -f $i; done); \
+    rm -f /lib/systemd/system/multi-user.target.wants/*;\
+    rm -f /etc/systemd/system/*.wants/*;\
+    rm -f /lib/systemd/system/local-fs.target.wants/*; \
+    rm -f /lib/systemd/system/sockets.target.wants/*udev*; \
+    rm -f /lib/systemd/system/sockets.target.wants/*initctl*; \
+    rm -f /lib/systemd/system/basic.target.wants/*;\
+    rm -f /lib/systemd/system/anaconda.target.wants/*;
+VOLUME [ “/sys/fs/cgroup” ]
+CMD [“/usr/sbin/init”]
+EXPOSE 8080
